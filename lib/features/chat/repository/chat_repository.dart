@@ -45,7 +45,7 @@ abstract class IChatRepository {
   /// If [message] is non-null, content mustn't be empty and longer than
   /// [maxMessageLength]. Throws an [InvalidMessageException].
   Future<Iterable<ChatMessageDto>> sendGeolocationMessage({
-    required ChatGeolocationDto location,
+    required List<double> location,
     String? message,
   });
 
@@ -86,7 +86,7 @@ class ChatRepository implements IChatRepository {
 
   @override
   Future<Iterable<ChatMessageDto>> sendGeolocationMessage({
-    required ChatGeolocationDto location,
+    required List<double> location,
     String? message,
   }) async {
     if (message != null && message.length > IChatRepository.maxMessageLength) {
@@ -94,7 +94,7 @@ class ChatRepository implements IChatRepository {
     }
     await _studyJamClient.sendMessage(SjMessageSendsDto(
       text: message,
-      geopoint: location.toGeopoint(),
+      geopoint: location,
     ));
 
     final messages = await _fetchAllMessages();
@@ -125,7 +125,8 @@ class ChatRepository implements IChatRepository {
     // API-request limitations, we can't load everything at one request, so
     // we're doing it in cycle.
     while (!isLimitBroken) {
-      final batch = await _studyJamClient.getMessages(lastMessageId: lastMessageId, limit: 10000);
+      final batch = await _studyJamClient.getMessages(
+          lastMessageId: lastMessageId, limit: 10000);
       messages.addAll(batch);
       lastMessageId = batch.last.chatId;
       if (batch.length < 10000) {
@@ -138,7 +139,8 @@ class ChatRepository implements IChatRepository {
     for (final message in messages) {
       messagesWithUsers[message.id] = message.userId;
     }
-    final users = await _studyJamClient.getUsers(messagesWithUsers.values.toSet().toList());
+    final users = await _studyJamClient
+        .getUsers(messagesWithUsers.values.toSet().toList());
     final localUser = await _studyJamClient.getUser();
 
     return messages
@@ -146,14 +148,18 @@ class ChatRepository implements IChatRepository {
           (sjMessageDto) => sjMessageDto.geopoint == null
               ? ChatMessageDto.fromSJClient(
                   sjMessageDto: sjMessageDto,
-                  sjUserDto: users.firstWhere((userDto) => userDto.id == sjMessageDto.userId),
-                  isUserLocal:
-                      users.firstWhere((userDto) => userDto.id == sjMessageDto.userId).id ==
-                          localUser?.id,
+                  sjUserDto: users.firstWhere(
+                      (userDto) => userDto.id == sjMessageDto.userId),
+                  isUserLocal: users
+                          .firstWhere(
+                              (userDto) => userDto.id == sjMessageDto.userId)
+                          .id ==
+                      localUser?.id,
                 )
               : ChatMessageGeolocationDto.fromSJClient(
                   sjMessageDto: sjMessageDto,
-                  sjUserDto: users.firstWhere((userDto) => userDto.id == sjMessageDto.userId),
+                  sjUserDto: users.firstWhere(
+                      (userDto) => userDto.id == sjMessageDto.userId),
                 ),
         )
         .toList();

@@ -19,11 +19,14 @@ class ChatTopicDto {
   /// Should be less than 1024 characters long.
   final String? description;
 
+  final DateTime created;
+
   /// Constructor for [ChatTopicDto].
   const ChatTopicDto({
     required this.id,
     this.name,
     this.description,
+    required this.created,
   });
 
   /// Named constructor for converting DTO from [StudyJamClient].
@@ -31,8 +34,10 @@ class ChatTopicDto {
     required SjChatDto sjChatDto,
   })  : id = sjChatDto.id,
         name = sjChatDto.name,
-        description = sjChatDto.description;
+        description = sjChatDto.description,
+        created = sjChatDto.created;
 
   @override
-  String toString() => 'ChatTopicDto(id: $id, name: $name, description: $description)';
+  String toString() =>
+      'ChatTopicDto(id: $id, name: $name, description: $description)';
 }
